@@ -11,6 +11,7 @@ from rest_framework import status
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Count
 from api.tasks import send_restaurant_confirmation, send_order_confirmation
+from celery.task.control import revoke
 
 # Create your views here.
 
@@ -80,9 +81,11 @@ class OrderViewSet(viewsets.ModelViewSet):
         return Order.objects.none()
 
     def perform_create(self, serializer):
-        serializer.save(customer=self.request.user)
-        send_order_confirmation.delay(serializer.order.id, self.request.user.email)
-
+        order = serializer.save(customer=self.request.user)
+        result = send_order_confirmation.apply_async(args=[serializer.order.id, self.request.user.email],countdown=300, expires=900)
+        order.celery_task_id = result.id
+        order.save()
+        
     @action(detail=True, methods=['patch'], url_path='status', url_name='order-status')
     def update_status(self, request, pk=None):
         order = self.get_object()
@@ -94,6 +97,12 @@ class OrderViewSet(viewsets.ModelViewSet):
         serializer = OrderStatusSerializer(order, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
+        
+        if order.status == Order.Status.CANCELLED and order.celery_task_id:
+            revoke(order.celery_task_id, terminate=True) # Invalidate the task
+            order.celery_task_id = None
+            order.save()
+            
 
         return Response(serializer.data)
     

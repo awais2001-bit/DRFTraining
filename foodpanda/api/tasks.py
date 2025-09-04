@@ -67,4 +67,7 @@ def daily_orders_received(self):
     return f"Daily order summaries sent to {restaurants.count()} restaurants."
 
 
+#invalidate task
+
+
         

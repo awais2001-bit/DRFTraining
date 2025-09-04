@@ -55,6 +55,7 @@ class Order(models.Model):
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    celery_task_id = models.CharField(max_length=255, blank=True, null=True)
 
     def __str__(self):
         return f"Order {self.id} - {self.customer.username}"
