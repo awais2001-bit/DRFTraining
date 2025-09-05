@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Chat room: {{ room_name }}</title>
+  </head>
+  <body>
+    <h2>Room: {{ room_name }}</h2>
+    <p>
+      Logged in as: {{ request.user.username }} (<a href="{% url 'logout' %}"
+        >logout</a
+      >)
+    </p>
+    <div
+      id="chat-log"
+      style="
+        border: 1px solid #ccc;
+        height: 300px;
+        overflow: auto;
+        padding: 10px;
+      "
+    ></div>
+    <input id="msg-input" autofocus placeholder="Type a message..." />
+    <button id="send-btn">Send</button>
+
+    <script>
+      const roomName = "{{ room_name }}";
+      const wsScheme = window.location.protocol === "https:" ? "wss" : "ws";
+      const socket = new WebSocket(
+        `${wsScheme}://${window.location.host}/ws/chat/${roomName}/`
+      );
+
+      socket.onopen = () => {
+        console.log("WebSocket connected");
+      };
+      socket.onmessage = (e) => {
+        const data = JSON.parse(e.data);
+        const node = document.createElement("div");
+        node.innerText = `${data.username}: ${data.message} (msg_count=${data.msg_count})`;
+        document.getElementById("chat-log").appendChild(node);
+      };
+      socket.onclose = () => console.log("WebSocket closed");
+
+      document.getElementById("send-btn").onclick = () => {
+        const input = document.getElementById("msg-input");
+        const text = input.value;
+        if (!text) return;
+        socket.send(JSON.stringify({ message: text }));
+        input.value = "";
+      };
+    </script>
+  </body>
+</html>

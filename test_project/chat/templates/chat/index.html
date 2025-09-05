@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Chat index</title>
+  </head>
+  <body>
+    <h1>Chat Index</h1>
+    {% if user.is_authenticated %}
+    <p>
+      Logged in as {{ user.username }}. <a href="{% url 'logout' %}">Logout</a>
+    </p>
+    <form action="" method="get">
+      <label>Room name: <input name="room" /></label>
+      <button type="button" onclick="go()">Go</button>
+    </form>
+    <script>
+      function go() {
+        const r = document.querySelector("input[name=room]").value || "room1";
+        window.location.href = `/chat/room/${r}/`;
+      }
+    </script>
+    {% else %}
+    <p><a href="{% url 'login' %}?next=/chat/">Login</a> to join chat.</p>
+    {% endif %}
+  </body>
+</html>
